@@ -1,13 +1,10 @@
 
 
-NUM ?= 0
-TYPE ?= D
 
-VERSION = $(shell cat version.txt).$(shell date '+%y%j').$(TYPE)
 
 NAME ?= output
 
-FULLNAME = $(NAME)-$(VERSION)-$(NUM)
+FULLNAME = $(NAME)
 
 $(info Building : $(FULLNAME))
 
@@ -23,25 +20,25 @@ OBJCOPY = arm-none-eabi-objcopy
 OBJDUMP = arm-none-eabi-objdump
 SIZE = arm-none-eabi-size
 
-SRCS =	$(wildcard sources/*.c) \
-		$(wildcard ../stm32_libraries/sources/*.c) \
-		$(wildcard ../stm32_sdk/STM32Cube_FW_L0_V1.7.0/Drivers/STM32L0xx_HAL_Driver/Src/stm32l0xx_ll_*.c) \
-		../stm32_sdk/STM32Cube_FW_L0_V1.7.0/Drivers/CMSIS/Device/ST/STM32L0xx/Source/Templates/system_stm32l0xx.c
+SRCS =	$(wildcard source/*.c) \
+		../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_rcc.c \
+		../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_gpio.c \
+		../../STM32Cube_FW_F4_V1.21.0/Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c
 
-SRCS_ASM = ../stm32_sdk/STM32Cube_FW_L0_V1.7.0/Drivers/CMSIS/Device/ST/STM32L0xx/Source/Templates/gcc/startup_stm32l051xx.s
+SRCS_ASM = ../../STM32Cube_FW_F4_V1.21.0/Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f412vx.s
 
 		
 INCLUDES =	-I./include \
-			-I../stm32_sdk/STM32Cube_FW_L0_V1.7.0/Drivers/CMSIS/Include \
-			-I../stm32_sdk/STM32Cube_FW_L0_V1.7.0/Drivers/CMSIS/Device/ST/STM32L0xx/Include \
-			-I../stm32_sdk/STM32Cube_FW_L0_V1.7.0/Drivers/STM32L0xx_HAL_Driver/Inc \
-			-I../stm32_libraries/include
+			-I../../STM32Cube_FW_F4_V1.21.0/Drivers/CMSIS/Include \
+			-I../../STM32Cube_FW_F4_V1.21.0/Drivers/CMSIS//Device/ST/STM32F4xx/Include \
+			-I../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Inc 
+
 OBJS = $(SRCS:.c=.o) $(SRCS_ASM:.s=.o)
 
-CFLAGS = $(INCLUDES) -std=c99 -g -ffunction-sections -Os -mcpu=cortex-m0plus -mthumb -DSTM32L051xx -DUSE_FULL_LL_DRIVER -DARM_MATH_CM0PLUS -DDEBUG=1 -DVERSION="\"$(VERSION)\""
-ASFLAGS = $(INCLUDES) -g -mcpu=cortex-m0plus
-LDSCRIPT = ../stm32_sdk/LinkerScripts/STM32L051K8_flash.lds
-LDFLAGS = -T$(LDSCRIPT) -Wl,-gc-sections -mcpu=cortex-m0plus -mthumb
+CFLAGS = $(INCLUDES)  -std=c99 -g -ffunction-sections -Os -mthumb -march=armv7e-m -mfloat-abi=softfp -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -DSTM32F412Vx -DUSE_FULL_LL_DRIVER
+ASFLAGS = $(INCLUDES) -g -mthumb -march=armv7e-m -mfloat-abi=softfp -mcpu=cortex-m4 -mfpu=fpv4-sp-d16
+LDSCRIPT = linker.ld
+LDFLAGS = -T$(LDSCRIPT) -Wl,-gc-sections -mthumb -mcpu=cortex-m4
 
 all : $(ELF) $(BIN) $(HEX) $(LST) size
 
@@ -68,7 +65,9 @@ $(ELF) : $(OBJS)
 %.o : %.s
 	@echo " AS" $(notdir $@)
 	@$(AS) $(ASFLAGS) $< -o $@
-	
+
+flash : $(BIN)
+	@dfu-util -i 0 -a 0 -s 0x08000000 -D $<
 
 size : $(ELF)
 	@echo " SIZE" $(notdir $@)
@@ -82,10 +81,5 @@ clean :
 	@rm -f *.lst
 	@echo " Clean objs"
 	@rm -f $(OBJS)
-
-
-flash: $(BIN)
-	@echo " Flashing..."
-	@ST-LINK_CLI -NoPrompt -Q -c SWD FREQ=4000000 UR -P $(BIN) 0x08000000 -V while_programming -HardRst
 
 .PHONY : clean size flash
