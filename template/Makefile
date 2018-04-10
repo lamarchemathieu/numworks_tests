@@ -21,9 +21,14 @@ OBJDUMP = arm-none-eabi-objdump
 SIZE = arm-none-eabi-size
 
 SRCS =	$(wildcard source/*.c) \
-		../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_rcc.c \
-		../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_ll_gpio.c \
-		../../STM32Cube_FW_F4_V1.21.0/Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c
+		../../STM32Cube_FW_F4_V1.21.0/Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/system_stm32f4xx.c \
+		../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c \
+		../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c \
+		../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c \
+		../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c \
+		../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c \
+		../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c \
+
 
 SRCS_ASM = ../../STM32Cube_FW_F4_V1.21.0/Drivers/CMSIS/Device/ST/STM32F4xx/Source/Templates/gcc/startup_stm32f412vx.s
 
@@ -31,6 +36,7 @@ SRCS_ASM = ../../STM32Cube_FW_F4_V1.21.0/Drivers/CMSIS/Device/ST/STM32F4xx/Sourc
 INCLUDES =	-I./include \
 			-I../../STM32Cube_FW_F4_V1.21.0/Drivers/CMSIS/Include \
 			-I../../STM32Cube_FW_F4_V1.21.0/Drivers/CMSIS//Device/ST/STM32F4xx/Include \
+			-I../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Inc/Legacy \
 			-I../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Inc 
 
 OBJS = $(SRCS:.c=.o) $(SRCS_ASM:.s=.o)
@@ -67,7 +73,7 @@ $(ELF) : $(OBJS)
 	@$(AS) $(ASFLAGS) $< -o $@
 
 flash : $(BIN)
-	@dfu-util -i 0 -a 0 -s 0x08000000 -D $<
+	@dfu-util -i 0 -a 0 -s 0x08000000:leave -D $<
 
 size : $(ELF)
 	@echo " SIZE" $(notdir $@)
