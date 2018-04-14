@@ -1,5 +1,5 @@
 
-#include "stm32f4xx_hal.h"
+#include <stm32f4xx_hal.h>
 
 #define LED_RED_GPIO	GPIOC
 #define LED_RED_PIN		GPIO_PIN_7
@@ -9,6 +9,18 @@
 
 #define LED_BLUE_GPIO	GPIOB
 #define LED_BLUE_PIN	GPIO_PIN_0
+
+#define UART_TX_GPIO	GPIOD
+#define UART_TX_PIN		GPIO_PIN_8
+#define UART_TX_AF		GPIO_AF7_USART3
+
+#define UART_RX_GPIO	GPIOC
+#define UART_RX_PIN		GPIO_PIN_11
+#define UART_RX_AF		GPIO_AF7_USART3
+
+#define UART 			USART3
+
+static UART_HandleTypeDef UartHandle;
 
 static void SystemClock_Config(void);
 
@@ -25,7 +37,7 @@ struct
 };
 
 
-void main(void)
+int main(void)
 {
 	uint32_t i;
 
@@ -33,14 +45,16 @@ void main(void)
 
 	SystemClock_Config();
 
-	__HAL_RCC_GPIOC_CLK_ENABLE();
 	__HAL_RCC_GPIOB_CLK_ENABLE();
-
+	__HAL_RCC_GPIOC_CLK_ENABLE();
+	__HAL_RCC_GPIOD_CLK_ENABLE();
+	__HAL_RCC_USART3_CLK_ENABLE();
 
 	GPIO_InitTypeDef  GPIO_InitStruct;
 	GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull  = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+
 
 	i = 0;
 	while(leds[i].gpio != NULL)
@@ -51,8 +65,60 @@ void main(void)
 	}
 
 
+	GPIO_InitStruct.Pin   = UART_TX_PIN;
+	GPIO_InitStruct.Alternate = UART_TX_AF;
+	GPIO_InitStruct.Mode  = GPIO_MODE_AF_PP;
+	GPIO_InitStruct.Pull  = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+	HAL_GPIO_Init(UART_TX_GPIO, &GPIO_InitStruct);
+
+	GPIO_InitStruct.Pin   = UART_RX_PIN;
+	GPIO_InitStruct.Alternate = UART_RX_AF;
+	GPIO_InitStruct.Mode  = GPIO_MODE_AF_OD;
+	GPIO_InitStruct.Pull  = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
+	HAL_GPIO_Init(UART_RX_GPIO, &GPIO_InitStruct);
+
+	UartHandle.Instance        = UART;
+
+	UartHandle.Init.BaudRate     = 115200;
+	UartHandle.Init.WordLength   = UART_WORDLENGTH_8B;
+	UartHandle.Init.StopBits     = UART_STOPBITS_1;
+	UartHandle.Init.Parity       = UART_PARITY_NONE;
+	UartHandle.Init.HwFlowCtl    = UART_HWCONTROL_NONE;
+	UartHandle.Init.Mode         = UART_MODE_TX_RX;
+	UartHandle.Init.OverSampling = UART_OVERSAMPLING_16;
+	HAL_UART_Init(&UartHandle);
+
 	while(1)
 	{
+		i=0;
+		while(1)
+		{
+			const char msg_salut[] = "Hello !\n";
+			HAL_UART_Transmit(&UartHandle, (uint8_t*)msg_salut, sizeof(msg_salut), 5000);
+
+			HAL_GPIO_TogglePin(leds[i].gpio, leds[i].pin);
+
+			i = i+1;
+			if (leds[i].gpio == NULL)
+				i = 0;
+
+			//HAL_Delay(100);
+
+			char c;
+			if (HAL_UART_Receive(&UartHandle, (uint8_t *)&c, 1, 100) == HAL_OK)
+			{	
+				char m1[] = "<";
+				char m2[] = ">\n";
+				HAL_UART_Transmit(&UartHandle, (uint8_t*)m1, sizeof(m1), 5000);
+				HAL_UART_Transmit(&UartHandle, (uint8_t*)&c, 1, 5000);
+				HAL_UART_Transmit(&UartHandle, (uint8_t*)m2, sizeof(m2), 5000);
+			}
+
+		}
+
+		/*
 		i = 0;
 		while(leds[i].gpio != NULL)
 		{
@@ -67,7 +133,10 @@ void main(void)
 
 			i++;
 		}
+		*/
 	}
+
+	return 0;
 }
 
 void SysTick_Handler(void)

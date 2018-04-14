@@ -27,6 +27,9 @@ SRCS =	$(wildcard source/*.c) \
 		../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c \
 		../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c \
 		../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c \
+		../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c \
+		../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_usart.c \
+		../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c \
 		../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c \
 
 
@@ -40,8 +43,9 @@ INCLUDES =	-I./include \
 			-I../../STM32Cube_FW_F4_V1.21.0/Drivers/STM32F4xx_HAL_Driver/Inc 
 
 OBJS = $(SRCS:.c=.o) $(SRCS_ASM:.s=.o)
+DEPS = $(SRCS:.c=.d) $(SRCS_ASM:.s=.d)
 
-CFLAGS = $(INCLUDES)  -std=c99 -g -ffunction-sections -Os -mthumb -march=armv7e-m -mfloat-abi=softfp -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -DSTM32F412Vx -DUSE_FULL_LL_DRIVER
+CFLAGS = $(INCLUDES)  -Wall -std=c99 -g -ffunction-sections -Os -mthumb -march=armv7e-m -mfloat-abi=softfp -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -DSTM32F412Vx -DUSE_FULL_LL_DRIVER
 ASFLAGS = $(INCLUDES) -g -mthumb -march=armv7e-m -mfloat-abi=softfp -mcpu=cortex-m4 -mfpu=fpv4-sp-d16
 LDSCRIPT = linker.ld
 LDFLAGS = -T$(LDSCRIPT) -Wl,-gc-sections -mthumb -mcpu=cortex-m4
@@ -66,7 +70,7 @@ $(ELF) : $(OBJS)
 	
 %.o : %.c
 	@echo " CC" $(notdir $@)
-	@$(CC) -c $(CFLAGS) $< -o $@
+	@$(CC) -MMD -MP -c $(CFLAGS) $< -o $@
 
 %.o : %.s
 	@echo " AS" $(notdir $@)
@@ -79,6 +83,8 @@ size : $(ELF)
 	@echo " SIZE" $(notdir $@)
 	@$(SIZE) $<
 
+-include $(DEPS)
+
 clean :
 	@echo " Clean binaries"
 	@rm -f *.elf
@@ -87,5 +93,6 @@ clean :
 	@rm -f *.lst
 	@echo " Clean objs"
 	@rm -f $(OBJS)
+	@rm -f $(DEPS)
 
 .PHONY : clean size flash
