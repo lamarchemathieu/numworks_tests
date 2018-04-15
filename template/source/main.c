@@ -95,7 +95,7 @@ int main(void)
 		i=0;
 		while(1)
 		{
-			const char msg_salut[] = "Hello !\n";
+			const char msg_salut[] = "Hello !\r\n";
 			HAL_UART_Transmit(&UartHandle, (uint8_t*)msg_salut, sizeof(msg_salut), 5000);
 
 			HAL_GPIO_TogglePin(leds[i].gpio, leds[i].pin);
@@ -110,7 +110,7 @@ int main(void)
 			if (HAL_UART_Receive(&UartHandle, (uint8_t *)&c, 1, 100) == HAL_OK)
 			{	
 				char m1[] = "<";
-				char m2[] = ">\n";
+				char m2[] = ">\r\n";
 				HAL_UART_Transmit(&UartHandle, (uint8_t*)m1, sizeof(m1), 5000);
 				HAL_UART_Transmit(&UartHandle, (uint8_t*)&c, 1, 5000);
 				HAL_UART_Transmit(&UartHandle, (uint8_t*)m2, sizeof(m2), 5000);
